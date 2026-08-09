@@ -6,19 +6,30 @@ from collections import OrderedDict
 from datetime import date
 
 from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt
+
 from sqlalchemy import func, extract
 
 from app.extensions import db
 from app.models.employee import Employee
 from app.models.department import Department
+from app.models.user import Role
 
 dashboard_bp = Blueprint("dashboard", __name__)
+
+# Roles allowed to see commercially sensitive figures (pay, spend, attrition
+# rate). Team Leads and individual Employees get an operational subset only.
+SENSITIVE_KPI_ROLES = {
+    Role.SUPER_ADMIN, Role.HR_ADMIN, Role.HR_MANAGER,
+    Role.DEPARTMENT_MANAGER, Role.AUDITOR,
+}
 
 
 @dashboard_bp.get("/executive")
 @jwt_required()
 def executive_dashboard():
+    role = (get_jwt() or {}).get("role", Role.EMPLOYEE)
+    can_see_sensitive = role in SENSITIVE_KPI_ROLES
     total_employees = Employee.query.count()
     active_employees = Employee.query.filter_by(is_active=True).count()
     attrited_employees = Employee.query.filter_by(attrited=True).count()
@@ -65,19 +76,26 @@ def executive_dashboard():
     )
     department_distribution = [{"department": name, "headcount": count} for name, count in dept_rows]
 
+    kpis = {
+        "total_employees": total_employees,
+        "active_employees": active_employees,
+        "avg_performance_score": round(float(avg_performance), 2),
+        "avg_satisfaction_score": round(float(avg_satisfaction), 2),
+        "avg_attendance_pct": round(float(avg_attendance), 2),
+        "open_positions": open_positions,
+    }
+    if can_see_sensitive:
+        kpis["attrition_rate_pct"] = attrition_rate
+        kpis["avg_monthly_salary"] = round(float(avg_salary), 2)
+        kpis["avg_recruitment_cost_usd"] = avg_recruitment_cost
+
     return jsonify({
-        "kpis": {
-            "total_employees": total_employees,
-            "active_employees": active_employees,
-            "attrition_rate_pct": attrition_rate,
-            "avg_monthly_salary": round(float(avg_salary), 2),
-            "avg_performance_score": round(float(avg_performance), 2),
-            "avg_satisfaction_score": round(float(avg_satisfaction), 2),
-            "avg_attendance_pct": round(float(avg_attendance), 2),
-            "open_positions": open_positions,
-            "avg_recruitment_cost_usd": avg_recruitment_cost,
-        },
+        "kpis": kpis,
         "hiring_trend": hiring_trend,
+        # Team Leads / Employees get headcount shape without the org-wide
+        # hiring-trend line, which reads as a pay/growth signal at their level.
         "department_distribution": department_distribution,
         "generated_at": date.today().isoformat(),
+        "access_level": "full" if can_see_sensitive else "operational",
+        "role": role,
     })

@@ -29,29 +29,46 @@ export function ExecutiveDashboard() {
   if (!data) return <LoadingState />;
 
   const { kpis } = data;
+  const isFullAccess = data.access_level === "full";
 
   return (
     <div className="p-8">
       <PageHeader
-        title="Executive Dashboard"
-        subtitle={`Organization-wide workforce KPIs · updated ${data.generated_at}`}
+        title={isFullAccess ? "Executive Dashboard" : "My Dashboard"}
+        subtitle={
+          isFullAccess
+            ? `Organization-wide workforce KPIs · updated ${data.generated_at}`
+            : `Operational overview for your role · updated ${data.generated_at}`
+        }
       />
+
+      {!isFullAccess && (
+        <div className="mb-4 glass-card border border-brand-500/30 bg-brand-500/5 p-3 text-xs text-ink-secondary">
+          Pay, spend, and org-wide attrition figures are limited to manager and HR roles. You're seeing the operational subset for your role.
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
         <KpiCard label="Total Employees" value={kpis.total_employees.toLocaleString()} icon={Users} accent="brand" />
         <KpiCard label="Active Employees" value={kpis.active_employees.toLocaleString()} icon={UserCheck} accent="healthy" />
-        <KpiCard
-          label="Attrition Rate"
-          value={`${kpis.attrition_rate_pct}%`}
-          icon={TrendingDown}
-          accent={kpis.attrition_rate_pct > 20 ? "risk" : "warning"}
-        />
-        <KpiCard label="Avg. Monthly Salary" value={`$${kpis.avg_monthly_salary.toLocaleString()}`} icon={Wallet} accent="brand" />
+        {kpis.attrition_rate_pct !== undefined && (
+          <KpiCard
+            label="Attrition Rate"
+            value={`${kpis.attrition_rate_pct}%`}
+            icon={TrendingDown}
+            accent={kpis.attrition_rate_pct > 20 ? "risk" : "warning"}
+          />
+        )}
+        {kpis.avg_monthly_salary !== undefined && (
+          <KpiCard label="Avg. Monthly Salary" value={`$${kpis.avg_monthly_salary.toLocaleString()}`} icon={Wallet} accent="brand" />
+        )}
         <KpiCard label="Open Positions" value={kpis.open_positions.toLocaleString()} icon={Briefcase} accent="brand" />
         <KpiCard label="Performance Score" value={`${kpis.avg_performance_score} / 5`} icon={Star} accent="healthy" />
         <KpiCard label="Satisfaction Score" value={`${kpis.avg_satisfaction_score} / 5`} icon={Heart} accent="healthy" />
         <KpiCard label="Attendance" value={`${kpis.avg_attendance_pct}%`} icon={CalendarCheck} accent="brand" />
-        <KpiCard label="Avg. Recruitment Cost" value={`$${kpis.avg_recruitment_cost_usd.toLocaleString()}`} icon={Wallet} accent="warning" />
+        {kpis.avg_recruitment_cost_usd !== undefined && (
+          <KpiCard label="Avg. Recruitment Cost" value={`$${kpis.avg_recruitment_cost_usd.toLocaleString()}`} icon={Wallet} accent="warning" />
+        )}
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">

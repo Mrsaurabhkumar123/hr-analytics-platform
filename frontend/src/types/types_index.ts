@@ -28,13 +28,13 @@ export interface LoginResponse {
 export interface ExecutiveKpis {
   total_employees: number;
   active_employees: number;
-  attrition_rate_pct: number;
-  avg_monthly_salary: number;
+  attrition_rate_pct?: number;
+  avg_monthly_salary?: number;
   avg_performance_score: number;
   avg_satisfaction_score: number;
   avg_attendance_pct: number;
   open_positions: number;
-  avg_recruitment_cost_usd: number;
+  avg_recruitment_cost_usd?: number;
 }
 
 export interface ExecutiveDashboardResponse {
@@ -42,6 +42,8 @@ export interface ExecutiveDashboardResponse {
   hiring_trend: { month: string; hires: number }[];
   department_distribution: { department: string; headcount: number }[];
   generated_at: string;
+  access_level: "full" | "operational";
+  role: string;
 }
 
 export interface Employee {
