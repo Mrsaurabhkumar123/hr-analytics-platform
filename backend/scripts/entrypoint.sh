@@ -25,7 +25,7 @@ sys.exit(1)
 PY
 
 echo "Seeding database (skipped automatically if already populated)..."
-python -m app.seed
+python -m app.seed --reset
 
 echo "Training attrition-risk model..."
 python -m app.ml.train_model || echo "Model training skipped/failed - API will report model_not_trained until retried."
