@@ -25,10 +25,10 @@ sys.exit(1)
 PY
 
 echo "Seeding database (skipped automatically if already populated)..."
-python -m app.seed --reset
+python -m app.seed 
 
 echo "Training attrition-risk model..."
 python -m app.ml.train_model || echo "Model training skipped/failed - API will report model_not_trained until retried."
 
 echo "Starting Gunicorn..."
-exec gunicorn -w 4 -b 0.0.0.0:5000 --timeout 120 wsgi:app
+exec gunicorn -w 1 -b 0.0.0.0:5000 --timeout 120 wsgi:app
